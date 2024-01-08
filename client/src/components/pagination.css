@@ -1,0 +1,23 @@
+
+.ui.pagination.gallery-pagination {
+  margin: 0;
+  
+}
+
+.ui.pagination.gallery-pagination .item {
+  border-radius: 0;
+  margin: 0;
+  border: 1px solid white;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.ui.pagination.gallery-pagination a.active.item {
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: #2185D0; 
+  color: white;
+}
+
+
