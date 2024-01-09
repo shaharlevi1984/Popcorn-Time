@@ -85,20 +85,25 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
             const data = await response.json();
             return data
         } catch (error) {
-            return { status: 404 };
+            return error.response.status
         }
     };
 
-    const onSuccess = async () => {
-        toast.error('Movie already exists in the database!');
+    const onSuccess = async (data) => {
+        console.log("Success", data)
+        if(data === 200) {
+            toast.error('Movie already exists in the database!');
+        }
+
+        if (data === 404) {
+            const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/addMovie`, FormState)
+            toast.success('Movie has been successfully added to the database')
+            closeModal();
+        }
     }
 
-    const onError = async (error) => {
-        if(error.status === 404) {
-        const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/addMovie`,FormState)
-        toast.error('Movie not found in database')
-        closeModal();
-        }
+    const onError = async (data) => {
+        toast.error('Submit Form Failed!')
     }
     const { mutate } = useMutation({
         mutationKey: ['movieId'],
@@ -107,12 +112,13 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
         onError,
     });
 
-    const submitFormHandler = async () => {
+    const submitFormHandler = async (e) => {
+        e.preventDefault();
         await mutate()
     };
-
+    
     return (
-        <Modal size='large' open={modalOpen} onClose={closeModal} onSubmit={() => submitFormHandler()}>
+        <Modal size='large' open={modalOpen} onClose={closeModal} >
             <Modal.Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>Movie Details Form</div>
                 <Button color='black' onClick={() => {
