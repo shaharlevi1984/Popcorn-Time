@@ -9,17 +9,17 @@ import 'semantic-ui-css/semantic.min.css';
 import './style.css'
 
 const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
-    const [file, setFile] = useState(null);
+    const [file, setFile] = useState('');
     const [FormState, setFormState] = useState({
-        id: { value: '', error: '' },
-        title: { value: '', required: true, maxLength: 50, error: '' },
+        id: { value: '', required: true, missingData: true, maxLength: 20, error: '' },
+        title: { value: '', required: true, missingData: true, maxLength: 50, error: '' },
         year: { value: '', required: true, pattern: /^\d{4}$/, error: '' },
-        length: { value: '', required: true, pattern: /^\d{2,3} min/, maxLength: 10, error: '' },
-        rating: { value: 0, required: true, min: 0, max: 10, error: '' },
-        genres: { value: '', required: true, maxLength: 100, error: '' },
-        directors: { value: '', required: true, maxLength: 50, error: '' },
-        cast: { value: '', required: true, maxLength: 100, error: '' },
-        plot: { value: '', required: true, maxLength: 200, error: '' },
+        length: { value: '', required: true, missingData: true, pattern: /^\b\d{2,3}\s?min\b/, maxLength: 10, error: '' },
+        rating: { value: '', required: true, missingData: true, min: 0, max: 10, error: '' },
+        genres: { value: '', required: true, missingData: true, maxLength: 100, error: '' },
+        directors: { value: '', required: true, missingData: true, maxLength: 50, error: '' },
+        cast: { value: '', required: true, missingData: true, maxLength: 100, error: '' },
+        plot: { value: '', required: true, missingData: true, maxLength: 200, error: '' },
         poster_path: { value: '', error: '' },
         subtitles: { value: '', error: '' },
         torrents: { value: '', error: '' },
@@ -27,18 +27,18 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
 
     const resetForm = () => {
         setFormState({
-            id: { value: '', error: '' },
-            title: { value: '', required: true, maxLength: 50, error: '' },
+            id: { value: '', required: true, missingData: true, maxLength: 20, error: '' },
+            title: { value: '', required: true, missingData: true, maxLength: 50, error: '' },
             year: { value: '', required: true, pattern: /^\d{4}$/, error: '' },
-            length: { value: '', required: true, pattern: /^\b\d{2,3}\s?min\b/, maxLength: 10, error: '' },
-            rating: { value: 0, required: true, min: 0, max: 10, error: '' },
-            genres: { value: '', required: true, maxLength: 100, error: '' },
-            directors: { value: '', required: true, maxLength: 50, error: '' },
-            cast: { value: '', required: true, maxLength: 100, error: '' },
-            plot: { value: '', required: true, maxLength: 200, error: '' },
-            poster_path: '',
-            subtitles: '',
-            torrents: '',
+            length: { value: '', required: true, missingData: true, pattern: /^\b\d{2,3}\s?min\b/, maxLength: 10, error: '' },
+            rating: { value: '', required: true, min: 0, max: 10, error: '' },
+            genres: { value: '', required: true, missingData: true, maxLength: 100, error: '' },
+            directors: { value: '', required: true, missingData: true, maxLength: 50, error: '' },
+            cast: { value: '', required: true, missingData: true, maxLength: 100, error: '' },
+            plot: { value: '', required: true, missingData: true, maxLength: 200, error: '' },
+            poster_path: { value: '', error: '' },
+            subtitles: { value: '', error: '' },
+            torrents: { value: '', error: '' },
         });
     };
 
@@ -54,6 +54,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
     const formAutoFill = async (e, title) => {
         try {
             const movie = await movieDetails(title);
+
             setFormState((prevFormState) => ({
                 ...prevFormState,
                 id: {
@@ -73,7 +74,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                     error: prevFormState.length.error || '',
                 },
                 rating: {
-                    value: prevFormState.rating.value || parseFloat(movie.imdbRating),
+                    value: prevFormState.rating.value || movie.imdbRating,
                     error: prevFormState.rating.error || '',
                 },
                 genres: {
@@ -92,22 +93,33 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                     value: prevFormState.plot.value || movie.Plot,
                     error: prevFormState.plot.error || '',
                 },
-                poster_path:''
             }));
         } catch (error) {
             console.error("Error fetching movie details:", error);
         }
     };
-
+    
     const inputChangeHandler = (e) => {
-        setFormState({
-            ...FormState,
-            [e.target.name]: e.target.value,
-        });
-    };
+        const { name, value } = e.target;
+        setFormState(prev => ({
+            ...prev,
+            [name]: {
+                ...prev[name],
+                value
+            }
+        }))
+    }
 
     const inputFileChangeHandler = (e) => {
-        setFile(e.target.files[0]);
+        const files = e.target.files;
+
+        setFormState(prevState => ({
+            ...prevState,
+            [e.target.name]: {
+                ...prevState[e.target.name],
+                value: files
+            }
+        }))
     }
 
     const searchMovieInDB = async () => {
@@ -122,20 +134,21 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
     };
 
     const onSuccess = async (data) => {
-        if (data === 200) {
-            toast.error('Movie already exists in the database!');
-        }
-
         if (data === 404) {
-            const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/addMovie`, FormState)
-            toast.success('Movie has been successfully added to the database')
+            const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/addMovie`, FormState);
+            toast.success('Movie has been successfully added to the database');
             closeModal();
+        } else if (data === 200) {
+            toast.error('Movie already exists in the database!');
+        } else {
+            toast.error('An unexpected error occurred!');
         }
     }
 
     const onError = async (data) => {
         toast.error('Submit Form Failed!')
     }
+
     const { mutate } = useMutation({
         mutationKey: ['movieId'],
         mutationFn: searchMovieInDB,
@@ -143,8 +156,11 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
         onError,
     });
 
-    const required = value => {
-        return Boolean(value) && !value.includes('N/A');
+    const isRequired = value => {
+        return Boolean(value);
+    }
+    const isMissingData = value => {
+        return value.includes('N/A')
     }
     const maxLength = (value, maximum) => {
         return value <= maximum;
@@ -154,69 +170,61 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
         return regex.test(value);
     }
 
-    const inRange = (value, start, end) => {
-        return value >= start && value <= end
+    const inRange = (value, min, max) => {
+        return value >= min && value <= max
     }
 
-    const validate = ({ target: { name, value } }) => {
+    const validate = (name, value) => {
+        let errorMessage = '';
 
-        if (FormState[name].required && !required(value)) {
-            setFormState({
-                ...FormState,
-                [name]: {
-                    ...FormState[name],
-                    value,
-                    error: `${name} is required`
-                }
-            })
+        if (FormState[name] && FormState[name].required && !isRequired(value)) {
+            errorMessage = `${name} is required`;
         }
-        else if (FormState[name].maxLength && !maxLength(value, FormState[name].maxLength)) {
-            setFormState({
-                ...FormState,
-                [name]: {
-                    ...FormState[name],
-                    value,
-                    error: `${name} length need to be less than ${FormState[name].maxLength}`
-                }
-            })
+
+        else if (FormState[name] && FormState[name].missingData && isMissingData(value)) {
+            errorMessage = `${name} missing data`;
         }
-        else if (FormState[name].pattern && !pattern(value, FormState[name].pattern)) {
-            setFormState({
-                ...FormState,
-                [name]: {
-                    ...FormState[name],
-                    value,
-                    error: `${name} doesn't match the pattern`,
-                },
-            });
+
+        else if (FormState[name] && FormState[name].pattern && !pattern(value, FormState[name].pattern)) {
+            errorMessage = `${name} dosn't match to the pattern`;
         }
-        else if (FormState[name].min && FormState[name].max && !inRange(value, FormState[name].min, FormState[name].max)) {
-            setFormState({
-                ...FormState,
+
+        else if (FormState[name] && FormState[name].maxLength && !maxLength(value)) {
+            errorMessage = `${name} must be less than ${FormState[name].maxLength} characters`;
+        }
+
+        else if (FormState[name] && FormState[name].min && FormState[name].max && !inRange(value, FormState[name].min, FormState[name].max)) {
+            errorMessage = `${name} dosn't match to the pattern`;
+        }
+
+        if (errorMessage) {
+            setFormState(prev => ({
+                ...prev,
                 [name]: {
-                    ...FormState[name],
-                    value,
-                    error: `${name} out of range, rating is between ${FormState[name].min}-${FormState[name].max}`
+                    ...prev[name],
+                    error: errorMessage
                 }
-            })
+            }))
+        } else {
+            setFormState(prev => ({
+                ...prev,
+                [name]: {
+                    ...prev[name],
+                    error: ''
+                }
+            }))
         }
     }
 
     const submitFormHandler = async (e) => {
         e.preventDefault();
 
-        Object.keys(FormState).forEach((fieldName) => {
-            validate({ target: { name: fieldName, value: FormState[fieldName].value } });
+        Object.keys(FormState).forEach(field => {
+            validate(field, FormState[field].value);
         });
 
-        // Check if there are any errors before submitting
-        if (Object.values(FormState).some((field) => field.error)) {
-            console.error("Form validation failed. Please check the form for errors.");
-            return;
-        }
-
-        await mutate()
-    };
+        mutate()
+    }
 
     return (
         <Modal size='large' open={modalOpen} onClose={closeModal} >
@@ -257,8 +265,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 value={FormState.id.value || ''}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.id && FormState.id.error}
-                                                className={FormState.id && FormState.id.error ? 'invalid' : ''}
+                                                errors={FormState.id.error}
                                             />
                                             <FormField
                                                 label='Movie Title'
@@ -268,19 +275,17 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 value={FormState.title.value}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.title && FormState.title.error}
-                                                className={FormState.title && FormState.title.error ? 'invalid' : ''}
+                                                errors={FormState.title.error}
                                             />
                                             <FormField
                                                 label='Movie Year'
-                                                type='number'
+                                                type='text'
                                                 name='year'
                                                 placeholder='movie year'
                                                 value={FormState.year.value}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.year && FormState.year.error}
-                                                className={FormState.year && FormState.year.error ? 'invalid' : ''}
+                                                errors={FormState.year.error}
                                             />
                                         </Form.Group>
                                     </Container>
@@ -293,16 +298,15 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 label='Movie Length'
                                                 type='text'
                                                 name='length'
-                                                placeholder='movie title'
+                                                placeholder='movie length'
                                                 value={FormState.length.value}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.length && FormState.length.error}
-                                                className={FormState.length && FormState.length.error ? 'invalid' : ''}
+                                                errors={FormState.length.error}
                                             />
                                             <FormField
                                                 label='Movie Rating'
-                                                type='number'
+                                                type='text'
                                                 name='rating'
                                                 placeholder='movie rating'
                                                 value={FormState.rating.value}
@@ -311,8 +315,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 max={10}
                                                 step={0.1}
                                                 onBlur={validate}
-                                                errors={FormState.rating && FormState.rating.error}
-                                                className={FormState.rating && FormState.rating.error ? 'invalid' : ''}
+                                                errors={FormState.rating.error}
                                             />
                                             <FormField
                                                 label='Movie Genres'
@@ -322,8 +325,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 value={FormState.genres.value}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.genres && FormState.genres.error}
-                                                className={FormState.genres && FormState.genres.error ? 'invalid' : ''}
+                                                errors={FormState.genres.error}
                                             />
                                         </Form.Group>
                                     </Container>
@@ -340,8 +342,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 value={FormState.directors.value}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.directors && FormState.directors.error}
-                                                className={FormState.directors && FormState.directors.error ? 'invalid' : ''}
+                                                errors={FormState.directors.error}
                                             />
                                             <FormField
                                                 label='Movie Cast'
@@ -351,8 +352,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 value={FormState.cast.value}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.cast && FormState.cast.error}
-                                                className={FormState.cast && FormState.cast.error ? 'invalid' : ''}
+                                                errors={FormState.cast.error}
                                             />
                                         </Form.Group>
                                     </Container>
@@ -369,8 +369,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 value={FormState.plot.value}
                                                 onChange={inputChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.plot && FormState.plot.error}
-                                                className={FormState.plot && FormState.plot.error ? 'invalid' : ''}
+                                                errors={FormState.plot.error}
                                             />
                                         </Form.Group>
                                     </Container>
@@ -385,8 +384,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 name='poster_path'
                                                 onChange={inputFileChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.poster_path && FormState.poster_path.error}
-                                                className={FormState.poster_path && FormState.poster_path.error ? 'invalid' : ''}
+                                                errors={FormState.poster_path.error}
                                             />
                                             <FormField
                                                 label='Subtitles'
@@ -395,8 +393,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 multiple
                                                 onChange={inputFileChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.subtitles && FormState.subtitles.error}
-                                                className={FormState.subtitles && FormState.subtitles.error ? 'invalid' : ''}
+                                                errors={FormState.subtitles.error}
                                             />
                                             <FormField
                                                 label='Torrents'
@@ -405,8 +402,7 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
                                                 multiple
                                                 onChange={inputFileChangeHandler}
                                                 onBlur={validate}
-                                                errors={FormState.torrents && FormState.torrents.error}
-                                                className={FormState.torrents && FormState.torrents.error ? 'invalid' : ''}
+                                                errors={FormState.torrents.error}
                                             />
                                         </Form.Group>
                                         <Button type="submit" color='green'> Submit </Button>
@@ -421,4 +417,4 @@ const MovieFormModal = ({ selectedCard, modalOpen, closeModal }) => {
     )
 }
 
-export default MovieFormModal
+export default MovieFormModal 

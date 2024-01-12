@@ -50,8 +50,19 @@ router.post('/addMovie', async (request, response) => {
   console.log(request.body);
 
   const { id, title, year, length, rating, genres, directors, cast, poster_path, plot } = request.body;
-  const params = { id, title, year, length, rating, genres, directors, cast, poster_path, plot };
-  const query = queries.addMovie(id, title, year, length, rating, genres, directors, cast, poster_path, plot);
+  const params = {
+    id: id.value,
+    title: title.value,
+    year: year.value,
+    length: length.value,
+    rating: rating.value,
+    genres: genres.value,
+    directors: directors.value,
+    cast: cast.value,
+    poster_path: poster_path.value,
+    plot: plot.value,
+  };
+  const query = queries.addMovie(params.id, params.title, params.year, params.length, params.rating, params.genres, params.directors, params.cast, params.poster_path, params.plot);
 
   try {
     const connection = await getConnection();
